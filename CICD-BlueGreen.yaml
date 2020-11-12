@@ -64,9 +64,12 @@ Parameters:
   VPCId:
     Type: AWS::EC2::VPC::Id
     Description: The ID of the Amazon VPC.
-  SubnetId:
+  SubnetPrivateId:
     Type: List<AWS::EC2::Subnet::Id>
-    Description: A list of one or more subnet IDs in your Amazon VPC. The maximum count is 16.
+    Description: A list of one or more private subnet IDs in your Amazon VPC. The maximum count is 16.
+  SubnetPublicId:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: A list of one or more public subnet IDs in your Amazon VPC. The maximum count is 16.
   SecurityGroupId:
     Type: List<AWS::EC2::SecurityGroup::Id>
     Description: A list of one or more security groups IDs in your Amazon VPC. The maximum count is 5.
@@ -86,6 +89,12 @@ Parameters:
   LaunchTemplateVersion:
     Type: Number
     Description: Number of launch template version
+  CPUTargetValue:
+    Type: Number
+    Description: Percent Ultilization
+  TopicAlarmArn:
+    Type: String
+    Description: SNS topic ARN to notification
     # to be continue .....
 # Conditions:
 # ......
@@ -430,7 +439,7 @@ Resources:
         Location: !Sub https://git-codecommit.ap-southeast-1.amazonaws.com/v1/repos/${RepoName}
       VpcConfig: 
         SecurityGroupIds: !Ref SecurityGroupId
-        Subnets: !Ref SubnetId
+        Subnets: !Ref SubnetPrivateId
         VpcId: !Ref VPCId
       Tags: 
         - Key: Name
@@ -464,7 +473,7 @@ Resources:
     Properties:
       ServiceToken: arn:aws:lambda:ap-southeast-1:700808010711:function:test-custom-function
       Region: ap-southeast-1
-      SubnetIds: !Ref SubnetId
+      SubnetIds: !Ref SubnetPrivateId
   #================================
   # Convert string uppercase to lower case
   #================================
@@ -494,9 +503,16 @@ Resources:
       LaunchTemplate: 
         LaunchTemplateName: !Ref LaunchTemplateName
         Version: !Ref LaunchTemplateVersion
-      MaxSize: '2'
-      MinSize: '0'
+      MaxSize: '10'
+      MinSize: '1'
       DesiredCapacity: '1'
+      NotificationConfigurations:
+        - NotificationTypes:
+            - autoscaling:EC2_INSTANCE_LAUNCH
+            - autoscaling:EC2_INSTANCE_LAUNCH_ERROR
+            - autoscaling:EC2_INSTANCE_TERMINATE
+            - autoscaling:EC2_INSTANCE_TERMINATE_ERROR
+          TopicARN: !Ref TopicAlarmArn
       Tags: 
         - Key: Env
           PropagateAtLaunch: true
@@ -513,10 +529,22 @@ Resources:
       TargetGroupARNs: 
         - !Ref TargetGroupArn
       TerminationPolicies: 
-        - Default
+        - NewestInstance
       VPCZoneIdentifier: 
-        !Ref SubnetId
-
+        !Ref SubnetPublicId
+  
+  # ========================================
+  # Scaling Policy Type
+  # ========================================
+  CPUScalingPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AutoScalingGroupName: !Ref MyAutoScalingGroup
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
+        TargetValue: !Ref CPUTargetValue
   # ====================================================================
   # Resource CodeDeploy Deployment Group
   # ====================================================================
