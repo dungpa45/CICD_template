@@ -10,8 +10,9 @@
 # - 1 Custom Resource DeploymentGroup
 # - Custom Resource: Get random string, convert to lowercase, get subnet ARN
 #
-# Before launch this stack please launch S3-sourcePipeline.yaml stack will 
-# create S3 source for CodePipeline
+# You must launch S3-sourcePipeline.yaml stack will 
+# create S3 source for CodePipeline before launch this stack 
+# 
 #===========================================================================
 
 Description: CICD native AWS template
@@ -20,18 +21,18 @@ Parameters:
     Type: String
     Default: Dev
     Description: Environment of the system. It should be in the abbreviation format, such as Dev, Prod, Stag,.... The first character must be capitalized.
-    AllowedPattern: '[A-Z].*'
+    AllowedPattern: '[a-zA-Z].*'
     MaxLength: 6
   projectName:
     Type: String
     Default: Project
     Description: The project name. The first character in the prefix must be capitalized.
-    AllowedPattern: '[0-9A-Z].*'
+    AllowedPattern: '[0-9a-zA-Z].*'
   componentName:
     Type: String
-    Default: Server
+    Default: Servers
     Description: The component name of microservices. The first character in the prefix must be capitalized.
-    AllowedPattern: '[0-9A-Z].*'
+    AllowedPattern: '[0-9a-zA-Z].*'
   #CodeCommit params
   gitBranchName:
     Type: String
@@ -47,7 +48,7 @@ Parameters:
   BuildImage:
     Type: String
     Description: 'The image tag or image digest that identifies the Docker image to use for this build project.For an image tag: <registry>/<repository>:<tag>'
-    Default: lamdn98/abc:php72-debian
+    Default: image
   PipelineArtifactStoreBucket:
     Type: String
     Default: oems-sourcepipeline
@@ -60,6 +61,10 @@ Parameters:
     Type: String
     Description: 'Name of region have that secret. ex:ap-southeast-1'
     Default: ap-southeast-1
+  BuildspecFile:
+    Type: String
+    Description: Name of file buildspec (yaml or yml)
+    Default: buildspecs.yaml
   #VPC params
   VPCId:
     Type: AWS::EC2::VPC::Id
@@ -95,6 +100,12 @@ Parameters:
   TopicAlarmArn:
     Type: String
     Description: SNS topic ARN to notification
+  FunctionCustomResourceArn:
+    Type: String
+    Description: ARN of Lambda Custom Resource function created by stack sourcePipeLine
+  AccountId:
+    Type: Number
+    Description: This Account ID 
     # to be continue .....
 # Conditions:
 # ......
@@ -283,8 +294,8 @@ Resources:
               Resource: "*"
             - Effect: Allow
               Resource:
-              - !Sub arn:aws:logs:ap-southeast-1:700808010711:log-group:/aws/codebuild/${projectName}-${componentName}-${environment}-Project
-              - !Sub arn:aws:logs:ap-southeast-1:700808010711:log-group:/aws/codebuild/${projectName}-${componentName}-${environment}-Project:*
+              - !Sub arn:aws:logs:ap-southeast-1:${AccountId}:log-group:/aws/codebuild/${projectName}-${componentName}-${environment}-Project
+              - !Sub arn:aws:logs:ap-southeast-1:${AccountId}:log-group:/aws/codebuild/${projectName}-${componentName}-${environment}-Project:*
               Action:
               - logs:CreateLogGroup
               - logs:CreateLogStream
@@ -308,7 +319,7 @@ Resources:
               - codebuild:BatchPutTestCases
               - codebuild:BatchPutCodeCoverages
               Resource:
-              - !Sub arn:aws:codebuild:ap-southeast-1:700808010711:report-group/${projectName}-${componentName}-${environment}-Project-*
+              - !Sub arn:aws:codebuild:ap-southeast-1:${AccountId}:report-group/${projectName}-${componentName}-${environment}-Project-*
             - Effect: Allow
               Action:
               - ec2:CreateNetworkInterface
@@ -322,7 +333,7 @@ Resources:
             - Effect: Allow
               Action:
               - ec2:CreateNetworkInterfacePermission
-              Resource: arn:aws:ec2:ap-southeast-1:700808010711:network-interface/*
+              Resource: !Sub arn:aws:ec2:ap-southeast-1:${AccountId}:network-interface/*
               Condition:
                 StringEquals:
                   ec2:Subnet: !Split [',', !Ref SubnetArn]
@@ -435,7 +446,7 @@ Resources:
       ServiceRole: !GetAtt BuildProjectRole.Arn
       Source: 
         Type: CODEPIPELINE
-        BuildSpec: buildspec.yaml 
+        BuildSpec: !Ref BuildspecFile
         Location: !Sub https://git-codecommit.ap-southeast-1.amazonaws.com/v1/repos/${RepoName}
       VpcConfig: 
         SecurityGroupIds: !Ref SecurityGroupId
@@ -464,14 +475,14 @@ Resources:
   RandomString:
     Type: Custom::RandomString
     Properties:
-      ServiceToken: arn:aws:lambda:ap-southeast-1:700808010711:function:test-custom-function
+      ServiceToken: !Ref FunctionCustomResourceArn
   #================================
   # Get SubnetArn by SubnetId
   #================================
   SubnetArn:
     Type: Custom::GetSubnetArn
     Properties:
-      ServiceToken: arn:aws:lambda:ap-southeast-1:700808010711:function:test-custom-function
+      ServiceToken: !Ref FunctionCustomResourceArn
       Region: ap-southeast-1
       SubnetIds: !Ref SubnetPrivateId
   #================================
@@ -480,7 +491,7 @@ Resources:
   ConvertLowercase:
     Type: Custom::ConvertLowercase
     Properties:
-      ServiceToken: arn:aws:lambda:ap-southeast-1:700808010711:function:test-custom-function
+      ServiceToken: !Ref FunctionCustomResourceArn
       NameConvert: !Ref projectName
   # ====================================================================
   # Resource AutoScaling Group
@@ -551,7 +562,8 @@ Resources:
   CodeDeployDMG:
     Type: Custom::CodeDeployDMG
     Properties:
-      ServiceToken: arn:aws:lambda:ap-southeast-1:700808010711:function:test-custom-function
+      ServiceToken: !Ref FunctionCustomResourceArn
+      # ServiceToken: arn:aws:lambda:ap-southeast-1:${AccountId}:function:test-custom-function
       Region: ap-southeast-1
       ApplicationName: !Ref CodeDeployApplication
       DeploymentGroupName: !Sub ${projectName}-${componentName}-${environment}-DMG

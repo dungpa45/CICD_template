@@ -1,0 +1,94 @@
+[
+    {
+        "ParameterKey": "environment",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "VPCId",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "PipelineArtifactStoreBucket",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "LoadBalancerName",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "projectName",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "SubnetPrivateId",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "SubnetPublicId",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "SecurityGroupId",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "SecretNameValue",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "gitBranchName",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "BuildImage",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "TopicAlarmArn",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "TargetGroupArn",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "RegionNameValue",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "componentName",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "environment",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "LaunchTemplateName",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "RepoName",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "CPUTargetValue",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "LaunchTemplateVersion",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "TargetGroupName",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "FunctionCustomResourceArn",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "AccountId",
+        "ParameterValue": ""
+    }
+]

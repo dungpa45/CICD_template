@@ -14,6 +14,16 @@ Parameters:
     Default: project
     Description: The project name. The first character in the prefix must be capitalized.
     AllowedPattern: '[0-9a-z].*'
+  sourceS3BucketName: 
+    Type: String
+    Default: dung-test-bucket
+    Description: The S3 Bucket name will lowercase and unique on the world.
+    AllowedPattern: '[0-9a-z].*'
+  ObjectKey:
+    Type: String
+    Default: custom-function.zip
+    Description: The object key of the zip file included the source code custom function.
+    AllowedPattern: '[0-9a-zA-Z].*'
 
 Resources:
   # ====================================================================
@@ -71,7 +81,26 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
       Path: /service-role/
       RoleName: !Sub ${projectName}-customfunction-Role
-      
+      Policies:
+        - PolicyName: !Sub ${projectName}-CustomFunction-Policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - events:DeleteRule
+              - events:PutTargets
+              - lambda:AddPermission
+              - lambda:GetFunction
+              - events:PutRule
+              - codedeploy:*
+              - events:RemoveTargets
+              - lambda:RemovePermission
+              - iam:PassRole
+              - ec2:CreateTags
+              - ec2:RunInstances
+              Resource: "*"
+
   # =======================================================
   # This function will create custom resource for CICD
   # =======================================================
@@ -79,7 +108,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${projectName}-CustomResource-Function
-      Handler: custom-codedeploy.py
+      Handler: custom-codedeploy.lambda_handler
       Role: !GetAtt LambdaCustomRole.Arn
       Runtime: python3.8
       Description: Create custom resource CodeDeployDMG
@@ -87,6 +116,6 @@ Resources:
       Timeout: 120
       Code: 
         # This Bucket will create first then you upload your code in this bucket
-        S3Bucket: oems-source-custom-function
-        S3Key: custom-function.zip
+        S3Bucket: !Ref sourceS3BucketName
+        S3Key: !Ref ObjectKey
       

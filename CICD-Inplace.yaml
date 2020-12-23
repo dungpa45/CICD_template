@@ -47,7 +47,7 @@ Parameters:
   BuildImage:
     Type: String
     Description: 'The image tag or image digest that identifies the Docker image to use for this build project.For an image tag: <registry>/<repository>:<tag>'
-    Default: lamdn98/abc:php72-debian
+    Default: image
   PipelineArtifactStoreBucket:
     Type: String
     Default: oems-sourcepipeline
